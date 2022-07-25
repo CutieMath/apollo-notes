@@ -1,4 +1,6 @@
-## How Apollo Cache works
+# How Apollo Cache works
+
+## Problem
 
 - First cache entry (When query all notes)
 
@@ -41,7 +43,7 @@ cache["note:id-1"] = {
 }
 ```
 
-### Solution
+## Solution
 
 - Create an extra `cache` with references point to the object. Structured as [type:ID]:
 
