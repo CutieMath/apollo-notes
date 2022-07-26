@@ -110,3 +110,67 @@ const  [updateNote,  {  loading  }]  =  useMutation(gql`
 	}
 `);
 ```
+
+Note:
+Need to make sure that
+
+- Return the changed obj
+- Return the ID of the changed obj so Apollo knows what to update.
+
+# How to delete data and display in UI in real time
+
+## Problem
+
+- UI doesn't update on delete when this mutation was used:
+
+```
+const [deleteNote] = useMutation (
+	gql `
+		mutation DeleteNote($noteId: String!){
+			 successful
+			 note {
+				id
+			 }
+		}
+	`
+)
+```
+
+## Solution
+
+- The reason this happened is bc Apollo didn't know we want to update the entire Notes object returned by this query:
+
+```
+const  NOTES_QUERY  =  gql`
+	query GetAllNotes($categoryId: String) {
+		notes(categoryId: $categoryId) {
+			id
+			content
+			category {
+				id
+				label
+			}
+		}
+	}
+`;
+```
+
+- We need to return the full list of the updated notes. To make this query simpler, we can use a build in method in Apollo:
+- Refetch option for mutation queries
+
+```
+const [deleteNote] = useMutation (
+	gql `
+		mutation DeleteNote($noteId: String!){
+			 successful
+			 note {
+				id
+			 }
+		}
+	`, {
+		refetchQueries: ["GetAllNotes"]
+	}
+)
+```
+
+This will make two gql calls.
