@@ -86,3 +86,27 @@ cache["note:id-1"] = "note:1";
 	'note:id-1':'note:1'
 }
 ```
+
+# How to update local cache
+
+## Problem
+
+- Data are normalised in the local Cache according above section.
+
+## Solution
+
+- Pass in returned elements ID when making mutation query. Apollo will automatically update the cached based on the ID:
+
+```
+const  [updateNote,  {  loading  }]  =  useMutation(gql`
+	mutation UpdateNote($id: String!, $content: String!) {
+		updateNote(id: $id, content: $content) {
+			successful
+			note {
+				id
+				content
+			}
+		}
+	}
+`);
+```
