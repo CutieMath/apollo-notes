@@ -174,3 +174,46 @@ const [deleteNote] = useMutation (
 ```
 
 This will make two gql calls.
+
+# How to make less GQL network calls for delete mutation
+
+## Problem
+
+- The above section will make two network calls.
+
+## Solution
+
+- Use the `cache.modify()` method to update the cache directly:
+- Note:
+  `cache.identify`, a utility function from Apollo was used here to check/create the ID of the deleted obj.
+
+```
+const  [deleteNote]  =  useMutation(
+	gql`
+		mutation DeleteNote($noteId: String!) {
+			deleteNote(id: $noteId) {
+				successful
+				note {
+					id
+				}
+			}
+		}
+	`,
+	{
+		update: (cache,  mutationResult) => {
+			const  deletedNoteId  =  cache.identify(
+				mutationResult.data?.deleteNote.note
+			);
+			cache.modify({
+				fields: {
+					notes: (existingNotes) => {
+						return  existingNotes.filter((noteRef) => {
+							return  cache.identify(noteRef) !==  deletedNoteId;
+						});
+					},
+				},
+			});
+		},
+	}
+);
+```
