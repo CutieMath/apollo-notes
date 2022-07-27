@@ -217,3 +217,31 @@ const  [deleteNote]  =  useMutation(
 	}
 );
 ```
+
+# How to optimise updates
+
+## Problem
+
+- The update function above only updates when a mutation query completes.
+
+## Solution
+
+- Use `optimisticResponse`.
+- Assume the mutation query is successful:
+
+```
+optimisticResponse: (vars) => {
+	return {
+		deleteNote: {
+			successful:  true,
+			__typename:  "DeleteNoteResponse",
+				note: {
+					id:  vars.noteId,
+					__typename:  "Note",
+				},
+			},
+		};
+	},
+```
+
+- Remember that Apollo cache use [type:ID] combined for the key. So the `__typename` must be specified.
