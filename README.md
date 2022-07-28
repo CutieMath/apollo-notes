@@ -245,3 +245,32 @@ optimisticResponse: (vars) => {
 ```
 
 - Remember that Apollo cache use [type:ID] combined for the key. So the `__typename` must be specified.
+- Apollo creates a new `optimistic cache` layer to handle this.
+
+# How to evict cache
+
+## Problem
+
+- When a note is deleted from the UI, it's deleted from the RootQuery, but not from the cache.
+
+## Solution
+
+- Use `cache.evict()` to delete the cache completely
+
+```
+update: (cache,  mutationResult) => {
+	const  deletedNoteId  =  cache.identify(
+		mutationResult.data?.deleteNote.note
+	);
+	cache.modify({
+		fields: {
+			notes: (existingNotes) => {
+				return  existingNotes.filter((noteRef) => {
+					return  cache.identify(noteRef) !==  deletedNoteId;
+				});
+			},
+		},
+	});
+	cache.evict({ id:  deletedNoteId });
+},
+```
