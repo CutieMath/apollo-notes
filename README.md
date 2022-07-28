@@ -256,6 +256,7 @@ optimisticResponse: (vars) => {
 ## Solution
 
 - Use `cache.evict()` to delete the cache completely
+- This is to make sure other parts of the UI is up to date.
 
 ```
 update: (cache,  mutationResult) => {
