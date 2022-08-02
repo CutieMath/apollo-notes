@@ -275,3 +275,66 @@ update: (cache,  mutationResult) => {
 	cache.evict({ id:  deletedNoteId });
 },
 ```
+
+# How to implement LoadMore
+
+## Problem
+
+- When data became infinitely large, it's not practical to fetch all data and display in the front-end
+
+## Solution
+
+- Use `fetchMore` function from Apollo
+
+1.  Add `$offset` and `$limit` parameters into query
+
+```
+query GetAllNotes($categoryId: String, $offset: Int, $limit: Int)
+```
+
+2. Add into they query's variable:
+
+```
+const { data, loading, error, fetchMore } =  useQuery(NOTES_QUERY, {
+	variables: {
+		categoryId: category,
+		offset: 0,
+		limit: 3,
+	},
+	fetchPolicy: "cache-and-network",
+	errorPolicy: "all",
+});
+```
+
+3. Add the `LoadMore` button. Use `fetchMore` from the Apollo client.
+
+```
+<UiLoadMoreButton
+	onClick={() =>
+		fetchMore({
+			variables: {
+				offset: data.notes.length,
+			},
+		})
+	}
+/>
+```
+
+4. Customise the behaviour of different fields in cache using TypePolicy
+
+```
+cache: new  InMemoryCache({
+	typePolicies: {
+		Query: {
+			fields: {
+				notes: {
+					keyArgs: ["categoryId"],
+					merge: (existingNotes  = [], incomingNotes) => {
+						return [...existingNotes, ...incomingNotes];
+					},
+				},
+			},
+		},
+	},
+}),
+```
