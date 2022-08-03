@@ -338,3 +338,55 @@ cache: new  InMemoryCache({
 	},
 }),
 ```
+
+# How to add custom fields into gql
+
+## Problem
+
+- An extra field is needed to determine UI. e.g. Selected box. This field does not exist in the backend.
+
+## Solution
+
+- Use `typePolicies`
+
+1. Add the UI
+
+```
+<Checkbox
+ isChecked={note.isSelected}
+>
+```
+
+2. Add the client field into gql
+
+```
+query  GetAllNotes($categoryId: String, $offset: Int, $limit: Int) {
+	notes(categoryId: $categoryId, offset: $offset, limit: $limit) {
+	id
+	content
+	isSelected @client
+		category {
+			id
+			label
+		}
+	}
+}
+```
+
+3. Add into typePolicies in Cache:
+
+```
+cache: new  InMemoryCache({
+	typePolicies: {
+		Note: {
+			fields: {
+				isSelected: {
+					read: () => {
+						return  true;
+					},
+				},
+			},
+		},
+	},
+}),
+```
