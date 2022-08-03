@@ -347,7 +347,7 @@ cache: new  InMemoryCache({
 
 ## Solution
 
-- Use `typePolicies`
+- Use `typePolicies` to store the state into Apollo central cache
 
 1. Add the UI
 
@@ -389,4 +389,27 @@ cache: new  InMemoryCache({
 		},
 	},
 }),
+```
+
+4. Use the state stored in the central cache for other DOM elements:
+
+- Query it:
+
+```
+query  GetNote($id: String!) {
+	note(id: $id) {
+		id
+		content
+			isSelected @client
+		}
+	}
+}
+```
+
+- Use it:
+
+```
+<UiEditNote
+	isNoteSelected={data?.note.isSelected}
+/>
 ```
