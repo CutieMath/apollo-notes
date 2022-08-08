@@ -483,3 +483,13 @@ note:  {
 	},
 },
 ```
+
+- Use `helper` to replace `__ref` as it's an Apollo private field to their library.
+
+```
+const  queriedNoteId  =  helpers.args.id;
+return  helpers.toReference({
+	id:  queriedNoteId,
+	__typename:  "Note",
+});
+```
