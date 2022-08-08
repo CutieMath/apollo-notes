@@ -1,36 +1,39 @@
 # How Apollo Cache works
 
 ## Problem
- 
+
 - First cache entry (When query all notes)
+
 ```
 cache["notes:categoryId-1] = [
 	{id: "1", content: "test01"},
 	{id: "2", content: "test02"}
 ]
 ```
+
 - Second cache entry (When query a single note)
+
 ```
 cache["note:id-1"] = {
-	id: "1", 
-	content: "test01", 
-	category:{ 
+	id: "1",
+	content: "test01",
+	category:{
 		"label": "tests"
 	}
 }
 ```
 
-- `cache` will be structured as two objects with duplicated values. 1.  This takes more memories. 2. Data inconsistency problem: If we update `note:id-1`, the first object `notes:categoryId-1` wouldn't be updated.  
+- `cache` will be structured as two objects with duplicated values. 1. This takes more memories. 2. Data inconsistency problem: If we update `note:id-1`, the first object `notes:categoryId-1` wouldn't be updated.
 
 ```
 {
 	"notes:categoryId-1": [
 		{id: "1", content: "test01"},
 		{id: "2", content: "test02"}
-	], 
+	],
 	"note:id-1": {
-		 id: "1", 
-		 content: "test01", 
+		 id: "1",
+		 content: "test01",
 		 category: {
 			{
 				 label: "tests"
@@ -50,24 +53,27 @@ cache["note:2"] = {id: "1", content: "test02"};
 ```
 
 - `notes:categoryId-1` became:
+
 ```
 cache["notes:categoryId-1"] = [
-	"note:1", 
+	"note:1",
 	"note:2"
 ]
 ```
-- `note:id-1` can be represented using just the ID. When the second query is called, the new fields were added into the first cache with `note:1` as key. 
+
+- `note:id-1` can be represented using just the ID. When the second query is called, the new fields were added into the first cache with `note:1` as key.
+
 ```
 cache["note:1"] = {
-	...cache["note:1"], 
-	content: "test 01", 
+	...cache["note:1"],
+	content: "test 01",
 	category: {label: "tests"}
 }
 
 cache["note:id-1"] = "note:1";
 ```
 
-#### Data normalisation:  As a result, when the first query is updated, calling the second query using its reference ID `note:1` will return the updated data. Cache will be looking like: 
+#### Data normalisation: As a result, when the first query is updated, calling the second query using its reference ID `note:1` will return the updated data. Cache will be looking like:
 
 ```
 {
@@ -76,7 +82,7 @@ cache["note:id-1"] = "note:1";
 		}
 	};
 	"note:2":  {id: "1", content: "test02"};
-	'notes:categoryId-1': ['note:1', 'note:2'], 
+	'notes:categoryId-1': ['note:1', 'note:2'],
 	'note:id-1':'note:1'
 }
 ```
@@ -85,10 +91,12 @@ cache["note:id-1"] = "note:1";
 
 ## Problem
 
-- Data are normalised in the local Cache according above section. 
+- Data are normalised in the local Cache according above section.
 
 ## Solution
+
 - Pass in returned elements ID when making mutation query. Apollo will automatically update the cached based on the ID:
+
 ```
 const  [updateNote,  {  loading  }]  =  useMutation(gql`
 	mutation UpdateNote($id: String!, $content: String!) {
@@ -103,18 +111,18 @@ const  [updateNote,  {  loading  }]  =  useMutation(gql`
 `);
 ```
 
-Note: 
+Note:
 Need to make sure that
+
 - Return the changed obj
-- Return the ID of the changed obj so Apollo knows what to update. 
-
-
+- Return the ID of the changed obj so Apollo knows what to update.
 
 # How to delete data and display in UI in real time
 
 ## Problem
 
-- UI doesn't update on delete when this mutation was used: 
+- UI doesn't update on delete when this mutation was used:
+
 ```
 const [deleteNote] = useMutation (
 	gql `
@@ -125,7 +133,7 @@ const [deleteNote] = useMutation (
 			 }
 		}
 	`
-) 
+)
 ```
 
 ## Solution
@@ -162,10 +170,10 @@ const [deleteNote] = useMutation (
 	`, {
 		refetchQueries: ["GetAllNotes"]
 	}
-) 
+)
 ```
 
-This will make two gql calls. 
+This will make two gql calls.
 
 # How to make less GQL network calls for delete mutation
 
@@ -176,8 +184,9 @@ This will make two gql calls.
 ## Solution
 
 - Use the `cache.modify()` method to update the cache directly:
-- Note: 
-`cache.identify`, a utility function from Apollo was used here to check/create the ID of the deleted obj. 
+- Note:
+  `cache.identify`, a utility function from Apollo was used here to check/create the ID of the deleted obj.
+
 ```
 const  [deleteNote]  =  useMutation(
 	gql`
@@ -207,16 +216,19 @@ const  [deleteNote]  =  useMutation(
 		},
 	}
 );
-``` 
+```
 
 # How to optimise updates
 
 ## Problem
-- The update function above only updates when a mutation query completes. 
+
+- The update function above only updates when a mutation query completes.
 
 ## Solution
-- Use `optimisticResponse`. 
+
+- Use `optimisticResponse`.
 - Assume the mutation query is successful:
+
 ```
 optimisticResponse: (vars) => {
 	return {
@@ -232,17 +244,19 @@ optimisticResponse: (vars) => {
 	},
 ```
 
-- Remember that Apollo cache use [type:ID] combined for the key. So the `__typename` must be specified. 
-- Apollo creates a new `optimistic cache` layer to handle this. 
+- Remember that Apollo cache use [type:ID] combined for the key. So the `__typename` must be specified.
+- Apollo creates a new `optimistic cache` layer to handle this.
 
 # How to evict cache
 
 ## Problem
-- When a note is deleted from the UI, it's deleted from the RootQuery, but not from the cache. 
+
+- When a note is deleted from the UI, it's deleted from the RootQuery, but not from the cache.
 
 ## Solution
+
 - Use `cache.evict()` to delete the cache completely
-- This is to make sure other parts of the UI is up to date. 
+- This is to make sure other parts of the UI is up to date.
 
 ```
 update: (cache,  mutationResult) => {
@@ -262,34 +276,38 @@ update: (cache,  mutationResult) => {
 },
 ```
 
-
 # How to implement LoadMore
 
 ## Problem
+
 - When data became infinitely large, it's not practical to fetch all data and display in the front-end
 
 ## Solution
+
 - Use `fetchMore` function from Apollo
 
 1.  Add `$offset` and `$limit` parameters into query
+
 ```
 query GetAllNotes($categoryId: String, $offset: Int, $limit: Int)
 ```
 
-2. Add into they query's variable: 
+2. Add into they query's variable:
+
 ```
 const { data, loading, error, fetchMore } =  useQuery(NOTES_QUERY, {
 	variables: {
 		categoryId: category,
-		offset: 0, 
+		offset: 0,
 		limit: 3,
 	},
 	fetchPolicy: "cache-and-network",
-	errorPolicy: "all", 
+	errorPolicy: "all",
 });
 ```
 
 3. Add the `LoadMore` button. Use `fetchMore` from the Apollo client.
+
 ```
 <UiLoadMoreButton
 	onClick={() =>
@@ -303,6 +321,7 @@ const { data, loading, error, fetchMore } =  useQuery(NOTES_QUERY, {
 ```
 
 4. Customise the behaviour of different fields in cache using TypePolicy
+
 ```
 cache: new  InMemoryCache({
 	typePolicies: {
@@ -318,14 +337,16 @@ cache: new  InMemoryCache({
 		},
 	},
 }),
-``` 
+```
 
 # How to add custom fields into gql
 
 ## Problem
-- An extra field is needed to determine UI. e.g. Selected box. This field does not exist in the backend. 
+
+- An extra field is needed to determine UI. e.g. Selected box. This field does not exist in the backend.
 
 ## Solution
+
 - Use `typePolicies` to store the state into Apollo central cache
 
 1. Add the UI
@@ -369,7 +390,9 @@ cache: new  InMemoryCache({
 	},
 }),
 ```
+
 4. Use the state stored in the central cache for other DOM elements:
+
 - Query it:
 
 ```
@@ -381,7 +404,7 @@ query  GetNote($id: String!) {
 		}
 	}
 }
-``` 
+```
 
 - Use it:
 
@@ -394,10 +417,13 @@ query  GetNote($id: String!) {
 # How to change cache on update
 
 ## Problem
+
 - We want the `read` typePolicy in cache to change if DOM changes
 
 ## Solution
+
 - Use `makeVar` utility
+
 1. Create a function to change the variable we want to listen to:
 
 ```
@@ -412,6 +438,7 @@ export function setNoteSelection(noteId, isSelected)  {
 ```
 
 2. Add into the read policy. use `helpers`
+
 ```
 typePolicies:  {
 	Note:  {
@@ -434,4 +461,25 @@ typePolicies:  {
 	onChange={(e)  =>  setNoteSelection(note.id,  e.target.checked)}
 	isChecked={note.isSelected}
 >
+```
+
+# How to query without making network calls
+
+## Problem
+
+- When a user has slow internet or is offline, they aren't able to read data from without making network calls.
+
+## Solution
+
+- Can use Apollo's `typePolicy` to edit the `__ref` property of a query
+
+```
+note:  {
+	read:  (existingCachedValue,  helpers)  =>  {
+		const  queriedNoteId  =  helpers.args.id;
+		return  {
+			__ref:  `Note:${queriedNoteId}`,
+		};
+	},
+},
 ```
