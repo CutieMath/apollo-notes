@@ -493,3 +493,19 @@ return  helpers.toReference({
 	__typename:  "Note",
 });
 ```
+
+# How to use `pollInterval`
+
+## Problem
+
+- We don't know if a new category is added into the server if no event triggers a query from the UI
+
+## Solution
+
+- Use `PollInterval `
+
+```
+const {data} = useQuery(ALL_CATEGORIES_QUERY, {
+	pollInterval: 1000
+}
+```
