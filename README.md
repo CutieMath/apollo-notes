@@ -509,3 +509,60 @@ const {data} = useQuery(ALL_CATEGORIES_QUERY, {
 	pollInterval: 1000
 }
 ```
+
+# How to update notes without using the `pollInterval`
+
+## Problem
+
+- Notes comes with long texts, keep polling them will slow down the App
+
+## Solution
+
+- Use `subscription` query
+
+1. Construct the query
+
+```
+const  {  data:  newNoteData  }  =  useSubscription(
+gql`
+	subscription  newSharedNote($categoryId:  String!) {
+		newSharedNote(categoryId:  $categoryId) {
+			id
+			content
+			category  {
+				id
+				label
+			}
+		}
+	}
+	`,
+	{
+		variables:  {
+			categoryId:  category,
+		},
+	}
+);
+```
+
+2. Setup the `websocketLink`
+
+```
+import {  WebSocketLink  } from "@apollo/client/link/ws";
+const  wsLink  =  new  WebSocketLink({
+	uri:  "ws://localhost:4000/graphql",
+});
+```
+
+3. Conditionally render to use `websocketLink` or `httpLink`
+
+```
+import {  getMainDefinition  } from "@apollo/client/utilities";
+const  protocolLink  =  split(
+	({  query  })  =>  {
+		const  definition  =  getMainDefinition(query);
+			return  definition.operation  ===  "subscription";
+		}
+		wsLink,
+		httpLink
+);
+```
