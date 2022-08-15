@@ -566,3 +566,50 @@ const  protocolLink  =  split(
 		httpLink
 );
 ```
+
+# How to use `subscribeToMore` from Apollo
+
+## Problem
+
+- When new data comes in, it overwrites the previous new note
+
+## Solution
+
+- Use `subscribeToMore`
+
+```
+useEffect(()  =>  {
+const  unsubscribe  =  subscribeToMore({
+document:  gql`
+subscription  newSharedNote($categoryId:  String!) {
+	newSharedNote(categoryId:  $categoryId) {
+		id
+		content
+		category  {
+			id
+			label
+		}
+	}
+}
+`,
+variables:  {
+	categoryId:  category,
+},
+updateQuery:  (previousQueryResult,  {  subscriptionData  })  =>  {
+	const  newNote  =  subscriptionData.data.newSharedNote;
+		client.cache.writeQuery({
+			query:  NOTES_QUERY,
+			data:  {
+				...previousQueryResult,  // ensure __typeName is preserved
+				notes: [newNote,  ...previousQueryResult.notes],
+			},
+			variables:  {
+				categoryId:  category,
+			},
+			overwrite:  true,
+		});
+	},
+	});
+	return unsubscribe;
+}, [category]);
+```
