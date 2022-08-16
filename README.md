@@ -613,3 +613,66 @@ updateQuery:  (previousQueryResult,  {  subscriptionData  })  =>  {
 	return unsubscribe;
 }, [category]);
 ```
+
+# How to use cache persist
+
+## Problem
+
+- Up to now all query data are stored in the memory
+- If client's network is slow, we need to wait till data got back to display things
+
+## Solution
+
+- Use `persistCache`
+
+1. Install cache persist package
+
+```
+yarn add apollo3-cache-persist graphql-anywhere
+```
+
+2. Import
+
+```
+import {  persistCache,  LocalStorageWrapper  } from "apollo3-cache-persist";
+```
+
+3. Use the package
+
+```
+persistCache({
+	cache:  client.cache,
+	storage:  new  LocalStorageWrapper(window.localStorage),
+}).then(()  =>  {
+	ReactDOM.render(
+		<React.StrictMode>
+			<ChakraProvider>
+				<ApolloProvider  client={client}>
+					<BrowserRouter>
+						<App  />
+					</BrowserRouter>
+				</ApolloProvider>
+			</ChakraProvider>
+		</React.StrictMode>,
+	document.getElementById("root")
+);
+});
+```
+
+## Problem 2
+
+- Use the cache persist above will cause application to display the same data from cache even when data are updated.
+
+## Solution
+
+- Use `fetch policy` in the client:
+
+```
+const  client  =  new  ApolloClient({
+	defaultOptions:  {
+		watchQuery:  {
+			fetchPolicy:  "cache-and-network",
+			nextFetchPolicy:  "cache-first",
+		},
+	},
+```
